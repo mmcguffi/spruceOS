@@ -202,9 +202,7 @@ class MainMenu:
         if(Theme.skip_main_menu() or Theme.merge_main_menu_and_game_menu()):
 
             selection = PyUiState.get_last_main_menu_selection()
-            available_tabs = ["Game"]
-            if(Theme.get_settings_enabled()):
-                available_tabs.append("Setting")
+            available_tabs = ["Game", "Setting"]
 
             def select_menu_tab(current_selection):
                 if(current_selection == "Game" and "Setting" in available_tabs):
