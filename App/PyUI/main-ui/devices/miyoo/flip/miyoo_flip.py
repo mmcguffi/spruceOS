@@ -174,11 +174,46 @@ class MiyooFlip(MiyooDevice):
 
     def init_gpio(self):
         try:
+            if not os.path.exists("/sys/class/gpio/gpio20"):
+                with open("/sys/class/gpio/export", "w") as f:
+                    f.write("20")
+                time.sleep(0.1)
+            with open("/sys/class/gpio/gpio20/direction", "w") as f:
+                f.write("out")
+            with open("/sys/class/gpio/gpio20/value", "w") as f:
+                f.write("0")
+        except Exception as e:
+            PyUiLogger.get_logger().warning(f"Unable to initialize rumble gpio20: {e}")
+
+        try:
             if not os.path.exists("/sys/class/gpio150"):
                 with open("/sys/class/gpio/export", "w") as f:
                     f.write("150")
         except Exception as e:
             PyUiLogger.get_logger().warning(f"Unable to export gpio150, probably already exported? {e}")
+
+    def vibrate(self, duration_ms=50):
+        def run_vibration():
+            try:
+                duration_ms_int = max(1, int(duration_ms))
+                deadline = time.time() + duration_ms_int / 1000
+                while time.time() < deadline:
+                    with open("/sys/class/gpio/gpio20/value", "w") as f:
+                        f.write("1")
+                    time.sleep(0.005)
+                    with open("/sys/class/gpio/gpio20/value", "w") as f:
+                        f.write("0")
+                    time.sleep(0.001)
+            except Exception as e:
+                PyUiLogger.get_logger().warning(f"Unable to vibrate: {e}")
+            finally:
+                try:
+                    with open("/sys/class/gpio/gpio20/value", "w") as f:
+                        f.write("0")
+                except Exception:
+                    pass
+
+        threading.Thread(target=run_vibration, daemon=True).start()
 
     def are_headphones_plugged_in(self):
         try:
