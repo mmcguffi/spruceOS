@@ -179,8 +179,9 @@ start_flip_retroarch_menu_watcher() {
 	RETROARCH_MENU_PIPE="/tmp/spruce_ra_menu_events.$$"
 	RETROARCH_MENU_DOWN_FILE="/tmp/spruce_ra_menu_down.$$"
 	RETROARCH_MENU_HELD_FILE="/tmp/spruce_ra_menu_held.$$"
+	RETROARCH_MENU_START_FILE="/tmp/spruce_ra_menu_start.$$"
 
-	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_HELD_FILE"
+	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_HELD_FILE" "$RETROARCH_MENU_START_FILE"
 	mkfifo "$RETROARCH_MENU_PIPE" || return 0
 
 	getevent "$EVENT_PATH_READ_INPUTS_SPRUCE" > "$RETROARCH_MENU_PIPE" &
@@ -193,6 +194,7 @@ start_flip_retroarch_menu_watcher() {
 			case "$menu_line" in
 				*"key $B_MENU 1"*)
 					rm -f "$RETROARCH_MENU_HELD_FILE"
+					awk '{printf "%d\n", $1 * 1000}' /proc/uptime > "$RETROARCH_MENU_START_FILE"
 					touch "$RETROARCH_MENU_DOWN_FILE"
 					(
 						sleep 0.7
@@ -206,9 +208,18 @@ start_flip_retroarch_menu_watcher() {
 					;;
 				*"key $B_MENU 0"*)
 					if [ -e "$RETROARCH_MENU_DOWN_FILE" ]; then
+						menu_elapsed_ms=0
+						if [ -s "$RETROARCH_MENU_START_FILE" ]; then
+							menu_start_ms="$(cat "$RETROARCH_MENU_START_FILE" 2>/dev/null)"
+							menu_now_ms="$(awk '{printf "%d\n", $1 * 1000}' /proc/uptime)"
+							menu_elapsed_ms=$((menu_now_ms - menu_start_ms))
+						fi
 						rm -f "$RETROARCH_MENU_DOWN_FILE"
 						if [ -e "$RETROARCH_MENU_HELD_FILE" ]; then
 							rm -f "$RETROARCH_MENU_HELD_FILE"
+						elif [ "$menu_elapsed_ms" -ge 650 ]; then
+							log_message "Held MENU release detected; opening RetroArch menu"
+							send_menu_button_to_retroarch
 						else
 							log_message "Short MENU detected; returning to PyUI game switcher"
 							touch /mnt/SDCARD/App/PyUI/main-ui/pyui_boot_gs_trigger
@@ -232,7 +243,7 @@ stop_flip_retroarch_menu_watcher() {
 
 	[ -n "$RETROARCH_MENU_GETEVENT_PID" ] && kill "$RETROARCH_MENU_GETEVENT_PID" 2>/dev/null
 	[ -n "$RETROARCH_MENU_WATCHER_PID" ] && kill "$RETROARCH_MENU_WATCHER_PID" 2>/dev/null
-	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_HELD_FILE"
+	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_HELD_FILE" "$RETROARCH_MENU_START_FILE"
 }
 
 run_retroarch_foreground() {
