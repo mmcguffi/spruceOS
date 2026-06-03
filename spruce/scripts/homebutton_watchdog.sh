@@ -228,11 +228,32 @@ prepare_game_switcher() {
 
 }
 
+return_to_main_menu() {
+    rm -f /mnt/SDCARD/App/PyUI/pyui_gs_trigger
+    rm -f /mnt/SDCARD/App/PyUI/main-ui/pyui_boot_gs_trigger
+    rm -f /mnt/SDCARD/App/PyUI/main-ui/pyui_gs_trigger
+
+    if [ -f /tmp/cmd_to_run.sh ]; then
+        log_message "homebutton_watchdog.sh: Returning to main menu."
+        kill_emulator
+        kill_port
+        rm -f /tmp/cmd_to_run.sh
+        rm -f /mnt/SDCARD/spruce/flags/lastgame.lock
+    elif pgrep "MainUI" >/dev/null; then
+        log_message "homebutton_watchdog.sh: already in MainUI, bypassing main menu return."
+    else
+        log_message "homebutton_watchdog.sh: /tmp/cmd_to_run.sh not found, bypassing main menu return."
+    fi
+}
+
 perform_action() {
     # handle short press
     case $1 in
     "Game Switcher")
         prepare_game_switcher
+        ;;
+    "Main menu")
+        return_to_main_menu
         ;;
     "Emulator menu")
         if pgrep -f "./PPSSPPSDL" >/dev/null; then
@@ -294,7 +315,7 @@ home_key_down () {
                 if [ "$do_vibrate" = "True" ]; then
                     vibrate &
                 fi
-                HOLD_HOME="$(get_config_value '.menuOptions."Emulator Settings".holdHomeAction.selected' "Game Switcher")"
+                HOLD_HOME="$(get_config_value '.menuOptions."Emulator Settings".holdHomeAction.selected' "Emulator menu")"
                 log_message "homebutton_watchdog.sh: Performing hold-home action: $HOLD_HOME"
                 perform_action "$HOLD_HOME"
 
@@ -330,8 +351,11 @@ home_key_up () {
         fi
 
         if [ "$was_cancelled" = false ]; then
-            TAP_HOME="$(get_config_value '.menuOptions."Emulator Settings".tapHomeAction.selected' "Emulator menu")"
+            TAP_HOME="$(get_config_value '.menuOptions."Emulator Settings".tapHomeAction.selected' "Main menu")"
             log_message "homebutton_watchdog.sh: Performing tap-home action: $TAP_HOME"
+            if { [ "$TAP_HOME" = "Game Switcher" ] || [ "$TAP_HOME" = "Main menu" ]; } && [ "$(get_config_value '.menuOptions."Game Switcher Settings".menuShouldVibrate.selected' "True")" = "True" ]; then
+                vibrate &
+            fi
             perform_action "$TAP_HOME"
         fi
 
@@ -378,4 +402,3 @@ getevent -pid $$ $EVENT_PATH_READ_INPUTS_SPRUCE | while read line; do
             ;;
         esac
 done
-

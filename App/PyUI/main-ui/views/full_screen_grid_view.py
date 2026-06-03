@@ -451,22 +451,22 @@ class FullScreenGridView(View):
             return False
 
         margin = int(18 * Theme._default_multiplier)
-        gap = int(18 * Theme._default_multiplier)
+        gap = int(14 * Theme._default_multiplier)
         top_y = self.get_top_bar_height() + int(18 * Theme._default_multiplier) + y_add_offset
         text_margin = int(18 * Theme._default_multiplier)
-        text_reserve_h = int(76 * Theme._default_multiplier)
+        text_reserve_h = int(92 * Theme._default_multiplier)
 
-        box_art_width = int(210 * Theme._default_multiplier)
+        box_art_width = int(232 * Theme._default_multiplier)
         box_art_height = max(
             int(330 * Theme._default_multiplier),
             Device.get_device().screen_height() - top_y - text_reserve_h - text_margin)
-        preview_width = int((Device.get_device().screen_width() - (margin * 2) - gap - box_art_width) * 0.92)
+        preview_width = int((Device.get_device().screen_width() - (margin * 2) - gap - box_art_width) * 0.978)
         preview_height = int(preview_width * 0.70)
         right_stack_y = top_y + int(42 * Theme._default_multiplier)
         preview_y = right_stack_y
 
         box_art_x = margin + x_offset
-        preview_x = margin + box_art_width + gap + x_offset
+        preview_x = margin + box_art_width + gap + int(6 * Theme._default_multiplier) + x_offset
 
         self._render_framed_image(
             box_art_image_path,
@@ -474,13 +474,13 @@ class FullScreenGridView(View):
             top_y,
             box_art_width,
             box_art_height,
-            ResizeType.ZOOM
+            ResizeType.FIT
         )
         if preview_image_path is not None:
-            progress_y = right_stack_y
+            progress_y = right_stack_y - int(6 * Theme._default_multiplier)
             progress_h = self._render_playtime_progress_bar(extra_data, preview_x, progress_y, preview_width)
             if progress_h > 0:
-                preview_y = progress_y + progress_h + int(8 * Theme._default_multiplier)
+                preview_y = right_stack_y + progress_h + int(14 * Theme._default_multiplier)
 
             self._render_framed_image(
                 preview_image_path,

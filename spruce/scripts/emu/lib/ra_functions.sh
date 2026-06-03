@@ -170,86 +170,6 @@ prepare_ra_config() {
 	sync
 }
 
-start_flip_retroarch_menu_watcher() {
-	[ "$PLATFORM" = "Flip" ] || return 0
-	[ -n "$1" ] || return 0
-	[ -n "$EVENT_PATH_READ_INPUTS_SPRUCE" ] || return 0
-
-	RETROARCH_MENU_WATCHED_PID="$1"
-	RETROARCH_MENU_PIPE="/tmp/spruce_ra_menu_events.$$"
-	RETROARCH_MENU_DOWN_FILE="/tmp/spruce_ra_menu_down.$$"
-	RETROARCH_MENU_START_FILE="/tmp/spruce_ra_menu_start.$$"
-
-	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_START_FILE"
-	mkfifo "$RETROARCH_MENU_PIPE" || return 0
-
-	getevent "$EVENT_PATH_READ_INPUTS_SPRUCE" > "$RETROARCH_MENU_PIPE" &
-	RETROARCH_MENU_GETEVENT_PID=$!
-
-	(
-		while kill -0 "$RETROARCH_MENU_WATCHED_PID" 2>/dev/null; do
-			IFS= read -r menu_line || break
-
-			case "$menu_line" in
-				*"key $B_MENU 1"*)
-					awk '{printf "%d\n", $1 * 1000}' /proc/uptime > "$RETROARCH_MENU_START_FILE"
-					touch "$RETROARCH_MENU_DOWN_FILE"
-					;;
-				*"key $B_MENU 0"*)
-					if [ -e "$RETROARCH_MENU_DOWN_FILE" ]; then
-						menu_elapsed_ms=0
-						if [ -s "$RETROARCH_MENU_START_FILE" ]; then
-							menu_start_ms="$(cat "$RETROARCH_MENU_START_FILE" 2>/dev/null)"
-							menu_now_ms="$(awk '{printf "%d\n", $1 * 1000}' /proc/uptime)"
-							menu_elapsed_ms=$((menu_now_ms - menu_start_ms))
-						fi
-						rm -f "$RETROARCH_MENU_DOWN_FILE"
-						if [ "$menu_elapsed_ms" -ge 650 ]; then
-							log_message "Held MENU release detected; opening RetroArch menu"
-							send_menu_button_to_retroarch
-						else
-							log_message "Short MENU detected; returning to PyUI game switcher"
-							touch /mnt/SDCARD/App/PyUI/main-ui/pyui_boot_gs_trigger
-							vibrate 120 &
-							echo "QUIT" | netcat -u -w0.1 127.0.0.1 55355
-							(
-								sleep 2
-								kill -0 "$RETROARCH_MENU_WATCHED_PID" 2>/dev/null && kill "$RETROARCH_MENU_WATCHED_PID" 2>/dev/null
-							) &
-						fi
-					fi
-					;;
-			esac
-		done < "$RETROARCH_MENU_PIPE"
-	) &
-	RETROARCH_MENU_WATCHER_PID=$!
-}
-
-stop_flip_retroarch_menu_watcher() {
-	[ "$PLATFORM" = "Flip" ] || return 0
-
-	[ -n "$RETROARCH_MENU_GETEVENT_PID" ] && kill "$RETROARCH_MENU_GETEVENT_PID" 2>/dev/null
-	[ -n "$RETROARCH_MENU_WATCHER_PID" ] && kill "$RETROARCH_MENU_WATCHER_PID" 2>/dev/null
-	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_START_FILE"
-}
-
-run_retroarch_foreground() {
-	if [ "$VERBOSE_EMU" = "1" ]; then
-		log_message "Running CMD: HOME=\"$RA_DIR/\" \"$RA_DIR/$RA_BIN\" $RA_PARAMS --log-file /mnt/SDCARD/Saves/spruce/retroarch.log -L \"$CORE_PATH\" \"$ROM_FILE\""
-		HOME="$RA_DIR/" "$RA_DIR/$RA_BIN" $RA_PARAMS --log-file /mnt/SDCARD/Saves/spruce/retroarch.log -L "$CORE_PATH" "$ROM_FILE" &
-	else
-		log_message "Running CMD: HOME=\"$RA_DIR/\" \"$RA_DIR/$RA_BIN\" $RA_PARAMS -L \"$CORE_PATH\" \"$ROM_FILE\""
-		HOME="$RA_DIR/" "$RA_DIR/$RA_BIN" $RA_PARAMS -L "$CORE_PATH" "$ROM_FILE" &
-	fi
-
-	retroarch_pid=$!
-	start_flip_retroarch_menu_watcher "$retroarch_pid"
-	wait "$retroarch_pid"
-	retroarch_status=$?
-	stop_flip_retroarch_menu_watcher
-	return "$retroarch_status"
-}
-
 run_retroarch() {
 	prepare_ra_config 2>/dev/null
 
@@ -266,7 +186,17 @@ run_retroarch() {
 	if [ "$PLATFORM" = "Flip" ]; then
 		rm -f "$IGM_FLAG"
 		update_ra_config_file_with_new_setting "$PLATFORM_CFG" \
-			"input_menu_toggle_btn = \"nul\""
+			"input_menu_toggle = \"nul\"" \
+			"input_menu_toggle_axis = \"nul\"" \
+			"input_menu_toggle_btn = \"nul\"" \
+			"input_menu_toggle_gamepad_combo = \"0\"" \
+			"input_menu_toggle_mbtn = \"nul\""
+		update_ra_config_file_with_new_setting "$RA_DIR/.config/retroarch/retroarch.cfg" \
+			"input_menu_toggle = \"nul\"" \
+			"input_menu_toggle_axis = \"nul\"" \
+			"input_menu_toggle_btn = \"nul\"" \
+			"input_menu_toggle_gamepad_combo = \"0\"" \
+			"input_menu_toggle_mbtn = \"nul\""
 	elif [ "$use_igm" = "True" ] && [ "$CORE" != "dosbox_pure" ]; then
 		touch "$IGM_FLAG"
 	else
@@ -314,9 +244,11 @@ run_retroarch() {
 	esac
 
 	if [ "$VERBOSE_EMU" = "1" ]; then
-		run_retroarch_foreground
+		log_message "Running CMD: HOME=\"$RA_DIR/\" \"$RA_DIR/$RA_BIN\" $RA_PARAMS --log-file /mnt/SDCARD/Saves/spruce/retroarch.log -L \"$CORE_PATH\" \"$ROM_FILE\""
+		HOME="$RA_DIR/" "$RA_DIR/$RA_BIN" $RA_PARAMS --log-file /mnt/SDCARD/Saves/spruce/retroarch.log -L "$CORE_PATH" "$ROM_FILE"
 	else
-		run_retroarch_foreground
+		log_message "Running CMD: HOME=\"$RA_DIR/\" \"$RA_DIR/$RA_BIN\" $RA_PARAMS -L \"$CORE_PATH\" \"$ROM_FILE\""
+		HOME="$RA_DIR/" "$RA_DIR/$RA_BIN" $RA_PARAMS -L "$CORE_PATH" "$ROM_FILE"
 	fi
 	backup_rac_creds_to_spruce_cfg
 	ra_close_setup_saves_and_states_for_core_differences
