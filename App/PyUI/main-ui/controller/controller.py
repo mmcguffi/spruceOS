@@ -84,6 +84,35 @@ class Controller:
         return Controller.controller_interface.still_held_down()
 
     @staticmethod
+    def is_held_down(controller_input):
+        if hasattr(Controller.controller_interface, "held_controller_inputs"):
+            with Controller.controller_interface.lock:
+                return controller_input in Controller.controller_interface.held_controller_inputs
+        return Controller.still_held_down() and Controller.last_input() == controller_input
+
+    @staticmethod
+    def get_queued_input(timeout=0):
+        deadline = time.time() + timeout
+        while True:
+            queued_input = None
+            if hasattr(Controller.controller_interface, "input_queue"):
+                with Controller.controller_interface.lock:
+                    if Controller.controller_interface.input_queue:
+                        queued_input = Controller.controller_interface.input_queue.popleft()
+            else:
+                queued_input = Controller.controller_interface.get_input(int(timeout * 1000))
+
+            queued_input = Device.get_device().check_for_button_remap(queued_input)
+            Controller.set_last_input(queued_input)
+            if Controller.last_controller_input is not None:
+                Theme.controller_button_pressed(Controller.last_controller_input)
+                return Controller.last_controller_input
+
+            if time.time() >= deadline:
+                return None
+            time.sleep(0.005)
+
+    @staticmethod
     def clear_last_input():
         #if(Controller.last_controller_input is not None):
         #    PyUiLogger.get_logger().info(f"Clearing last input")
