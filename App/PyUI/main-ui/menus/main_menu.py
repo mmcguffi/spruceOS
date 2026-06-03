@@ -206,6 +206,8 @@ class MainMenu:
                         selection = "Setting"
                     elif(ControllerInput.R1 == controller_input):
                         selection = "App"
+                    elif(ControllerInput.SELECT == controller_input):
+                        selection = "Setting"
                     PyUiState.set_last_main_menu_selection(None)
                 elif("App" == selection):
                     PyUiState.set_last_main_menu_selection("App")
@@ -214,6 +216,8 @@ class MainMenu:
                     if(ControllerInput.L1 == controller_input):
                         selection = "Game"
                     elif(ControllerInput.R1 == controller_input):
+                        selection = "Setting"
+                    elif(ControllerInput.SELECT == controller_input):
                         selection = "Setting"
                     PyUiState.set_last_main_menu_selection(None)
                 elif("Setting" == selection):

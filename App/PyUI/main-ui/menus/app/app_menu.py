@@ -128,7 +128,11 @@ class AppMenu:
             
             selected = Selection(None, None, None)
             while(selected.get_input() is None):
-                selected = view.get_selection(select_controller_inputs = [ControllerInput.A, ControllerInput.MENU])
+                accepted_inputs = [ControllerInput.A, ControllerInput.MENU]
+                if(Theme.skip_main_menu()):
+                    accepted_inputs.append(ControllerInput.SELECT)
+
+                selected = view.get_selection(select_controller_inputs = accepted_inputs)
                 if(ControllerInput.A == selected.get_input()):
                     self.save_app_selection(selected)
                     selected.get_selection().get_value()()
@@ -147,5 +151,6 @@ class AppMenu:
                 elif(Theme.skip_main_menu() and ControllerInput.R1 == selected.get_input()):
                     self.save_app_selection(selected)
                     return ControllerInput.R1
-                        
-                    
+                elif(Theme.skip_main_menu() and ControllerInput.SELECT == selected.get_input()):
+                    self.save_app_selection(selected)
+                    return ControllerInput.SELECT
