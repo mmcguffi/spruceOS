@@ -198,6 +198,7 @@ start_flip_retroarch_menu_watcher() {
 						sleep 0.7
 						if [ -e "$RETROARCH_MENU_DOWN_FILE" ]; then
 							touch "$RETROARCH_MENU_HELD_FILE"
+							rm -f "$RETROARCH_MENU_DOWN_FILE"
 							log_message "Held MENU detected; opening RetroArch menu"
 							send_menu_button_to_retroarch
 						fi
