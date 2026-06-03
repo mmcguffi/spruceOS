@@ -179,9 +179,8 @@ start_flip_retroarch_menu_watcher() {
 	RETROARCH_MENU_PIPE="/tmp/spruce_ra_menu_events.$$"
 	RETROARCH_MENU_DOWN_FILE="/tmp/spruce_ra_menu_down.$$"
 	RETROARCH_MENU_START_FILE="/tmp/spruce_ra_menu_start.$$"
-	RETROARCH_MENU_SYNTH_UP_FILE="/tmp/spruce_ra_menu_synth_up.$$"
 
-	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_START_FILE" "$RETROARCH_MENU_SYNTH_UP_FILE"
+	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_START_FILE"
 	mkfifo "$RETROARCH_MENU_PIPE" || return 0
 
 	getevent "$EVENT_PATH_READ_INPUTS_SPRUCE" > "$RETROARCH_MENU_PIPE" &
@@ -195,17 +194,8 @@ start_flip_retroarch_menu_watcher() {
 				*"key $B_MENU 1"*)
 					awk '{printf "%d\n", $1 * 1000}' /proc/uptime > "$RETROARCH_MENU_START_FILE"
 					touch "$RETROARCH_MENU_DOWN_FILE"
-					touch "$RETROARCH_MENU_SYNTH_UP_FILE"
-					{
-						echo $B_MENU 0
-						echo 0 0 0
-					} | sendevent "$EVENT_PATH_READ_INPUTS_SPRUCE"
 					;;
 				*"key $B_MENU 0"*)
-					if [ -e "$RETROARCH_MENU_SYNTH_UP_FILE" ]; then
-						rm -f "$RETROARCH_MENU_SYNTH_UP_FILE"
-						continue
-					fi
 					if [ -e "$RETROARCH_MENU_DOWN_FILE" ]; then
 						menu_elapsed_ms=0
 						if [ -s "$RETROARCH_MENU_START_FILE" ]; then
@@ -240,7 +230,7 @@ stop_flip_retroarch_menu_watcher() {
 
 	[ -n "$RETROARCH_MENU_GETEVENT_PID" ] && kill "$RETROARCH_MENU_GETEVENT_PID" 2>/dev/null
 	[ -n "$RETROARCH_MENU_WATCHER_PID" ] && kill "$RETROARCH_MENU_WATCHER_PID" 2>/dev/null
-	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_START_FILE" "$RETROARCH_MENU_SYNTH_UP_FILE"
+	rm -f "$RETROARCH_MENU_PIPE" "$RETROARCH_MENU_DOWN_FILE" "$RETROARCH_MENU_START_FILE"
 }
 
 run_retroarch_foreground() {
@@ -275,6 +265,8 @@ run_retroarch() {
 	IGM_FLAG="/mnt/SDCARD/RetroArch/IGM.txt"
 	if [ "$PLATFORM" = "Flip" ]; then
 		rm -f "$IGM_FLAG"
+		update_ra_config_file_with_new_setting "$PLATFORM_CFG" \
+			"input_menu_toggle_btn = \"nul\""
 	elif [ "$use_igm" = "True" ] && [ "$CORE" != "dosbox_pure" ]; then
 		touch "$IGM_FLAG"
 	else
