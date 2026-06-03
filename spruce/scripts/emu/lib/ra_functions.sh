@@ -265,7 +265,9 @@ run_retroarch() {
 
 	# Sync IGM flag file with config setting
 	IGM_FLAG="/mnt/SDCARD/RetroArch/IGM.txt"
-	if [ "$use_igm" = "True" ] && [ "$CORE" != "dosbox_pure" ]; then
+	if [ "$PLATFORM" = "Flip" ]; then
+		rm -f "$IGM_FLAG"
+	elif [ "$use_igm" = "True" ] && [ "$CORE" != "dosbox_pure" ]; then
 		touch "$IGM_FLAG"
 	else
 		rm -f "$IGM_FLAG"
