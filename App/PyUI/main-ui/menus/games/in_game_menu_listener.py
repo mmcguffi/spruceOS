@@ -18,18 +18,18 @@ class InGameMenuListener:
         self.popup_menu = InGameMenuPopup()
         self.ra_popup_menu = RetroarchInGameMenuPopup()
 
-    def _run_game_switcher(self):
-        from menus.games.recents_menu_gs import RecentsMenuGS
+    def _run_main_menu(self):
+        from menus.games.just_games_menu import JustGamesMenu
 
         device = Device.get_device()
         if hasattr(device, "vibrate"):
-            device.vibrate(80)
+            device.vibrate(120)
 
         Controller.gs_triggered = True
         try:
             Controller.clear_last_input()
-            PyUiLogger.get_logger().info("Starting RecentsMenuGS().run_rom_selection()")
-            RecentsMenuGS().run_rom_selection()
+            PyUiLogger.get_logger().info("Starting JustGamesMenu().run_rom_selection()")
+            JustGamesMenu().run_rom_selection()
             Controller.clear_last_input()
         finally:
             Controller.gs_triggered = False
@@ -110,7 +110,7 @@ class InGameMenuListener:
                     if(held_down and support_menu_button_in_game):
                         self._run_emulation_options(game_process, uses_retroarch)
                     elif(not held_down):
-                        self._run_game_switcher()
+                        self._run_main_menu()
                     else:
                         Controller.clear_last_input()
                         Controller.clear_input_queue()
