@@ -205,8 +205,7 @@ start_flip_retroarch_menu_watcher() {
 						fi
 						rm -f "$RETROARCH_MENU_DOWN_FILE"
 						if [ "$menu_elapsed_ms" -ge 650 ]; then
-							log_message "Held MENU release detected; opening RetroArch menu"
-							send_menu_button_to_retroarch
+							log_message "Held MENU release detected; ignoring quick switcher"
 						else
 							log_message "Short MENU detected; returning to PyUI game switcher"
 							touch /mnt/SDCARD/App/PyUI/main-ui/pyui_boot_gs_trigger
