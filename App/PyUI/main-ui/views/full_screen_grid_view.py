@@ -174,9 +174,29 @@ class FullScreenGridView(View):
         selected = self.get_selected_option()
         return selected is not None and self._use_compact_text_overlay(selected)
 
+    def _format_hltb_display_time(self, hltb_time):
+        raw_time = str(hltb_time or "").strip().lower()
+        try:
+            if raw_time.endswith("h"):
+                hours = float(raw_time[:-1])
+            elif raw_time.endswith("m"):
+                hours = float(raw_time[:-1]) / 60
+            else:
+                return hltb_time
+        except ValueError:
+            return hltb_time
+
+        rounded_hours = int((hours * 2) + 0.5) / 2
+        if rounded_hours <= 0:
+            rounded_hours = 0.5
+        if rounded_hours.is_integer():
+            return f"{int(rounded_hours)}h"
+        return f"{rounded_hours:.1f}h"
+
     def _get_hltb_card_size(self, hltb_time, pad_x, pad_y, line_gap):
+        display_time = self._format_hltb_display_time(hltb_time)
         label_w, label_h = Display.get_text_dimensions(FontPurpose.LIST_TOTAL, "HLTB")
-        value_w, value_h = Display.get_text_dimensions(FontPurpose.LIST_INDEX, f"~{hltb_time}")
+        value_w, value_h = Display.get_text_dimensions(FontPurpose.LIST_INDEX, f"~{display_time}")
         min_w = int(74 * Theme._default_multiplier)
         box_w = max(min_w, max(label_w, value_w) + (pad_x * 2))
         box_h = label_h + line_gap + value_h + (pad_y * 2)
@@ -184,7 +204,7 @@ class FullScreenGridView(View):
 
     def _render_hltb_card(self, hltb_time, margin, pad_x, pad_y, line_gap, x_offset=0, y_add_offset=0, alpha=None):
         label = "HLTB"
-        value = f"~{hltb_time}"
+        value = f"~{self._format_hltb_display_time(hltb_time)}"
         box_w, box_h = self._get_hltb_card_size(hltb_time, pad_x, pad_y, line_gap)
         box_x = Device.get_device().screen_width() - margin - box_w + x_offset
         box_y = Device.get_device().screen_height() - box_h - margin + y_add_offset
