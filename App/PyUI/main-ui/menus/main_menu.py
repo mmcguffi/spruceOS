@@ -203,11 +203,20 @@ class MainMenu:
 
             selection = PyUiState.get_last_main_menu_selection()
             available_tabs = ["Game", "Setting"]
+            if(Theme.get_apps_enabled()):
+                available_tabs.append("App")
 
             def select_menu_tab(current_selection):
                 if(current_selection == "Game" and "Setting" in available_tabs):
                     return "Setting"
                 return "Game"
+
+            def select_start_tab(current_selection):
+                if(current_selection == "App"):
+                    return "Game"
+                if("App" in available_tabs):
+                    return "App"
+                return current_selection
 
             if(selection not in available_tabs):
                 PyUiLogger.get_logger().info(f"Defaulting to Games tab on main menu due to invalid selection of {selection}")
@@ -220,6 +229,8 @@ class MainMenu:
                     controller_input = JustGamesMenu().run_rom_selection()
                     if(ControllerInput.SELECT == controller_input):
                         selection = select_menu_tab(selection)
+                    elif(ControllerInput.START == controller_input):
+                        selection = select_start_tab(selection)
                     PyUiState.set_last_main_menu_selection(None)
                 elif("App" == selection):
                     PyUiState.set_last_main_menu_selection("App")
@@ -227,6 +238,8 @@ class MainMenu:
                     PyUiLogger.get_logger().info(f"App Menu returned input: {controller_input}")
                     if(ControllerInput.SELECT == controller_input):
                         selection = select_menu_tab(selection)
+                    elif(ControllerInput.START == controller_input):
+                        selection = select_start_tab(selection)
                     PyUiState.set_last_main_menu_selection(None)
                 elif("Setting" == selection):
                     PyUiState.set_last_main_menu_selection("Setting")

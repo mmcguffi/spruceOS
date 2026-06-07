@@ -559,7 +559,7 @@ class RomsMenuCommon(ABC):
                 if hasattr(view, "selected"):
                     view.selected = view_selected.get_index()
 
-            accepted_inputs = [ControllerInput.A, ControllerInput.X, ControllerInput.MENU, ControllerInput.SELECT]
+            accepted_inputs = [ControllerInput.A, ControllerInput.X, ControllerInput.MENU, ControllerInput.SELECT, ControllerInput.START]
             selected = view.get_selection(accepted_inputs)
             if(selected is not None and (selected.get_selection() is not None or ControllerInput.B == selected.get_input())):
                 if(ControllerInput.A == selected.get_input()):
@@ -657,6 +657,10 @@ class RomsMenuCommon(ABC):
                     elif(Theme.skip_main_menu() or Theme.merge_main_menu_and_game_menu()):
                         self._save_current_game_selection(page_name, selected)
                         return ControllerInput.SELECT
+                elif(ControllerInput.START == selected.get_input() and not self.support_only_game_launching):
+                    if(Theme.skip_main_menu() or Theme.merge_main_menu_and_game_menu()):
+                        self._save_current_game_selection(page_name, selected)
+                        return ControllerInput.START
 
         Display.restore_bg()
 

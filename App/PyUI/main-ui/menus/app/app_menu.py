@@ -128,7 +128,7 @@ class AppMenu:
             
             selected = Selection(None, None, None)
             while(selected.get_input() is None):
-                selected = view.get_selection(select_controller_inputs = [ControllerInput.A, ControllerInput.MENU])
+                selected = view.get_selection(select_controller_inputs = [ControllerInput.A, ControllerInput.MENU, ControllerInput.START])
                 if(ControllerInput.A == selected.get_input()):
                     self.save_app_selection(selected)
                     selected.get_selection().get_value()()
@@ -141,6 +141,9 @@ class AppMenu:
                         self.show_all_apps = AppMenuPopup(self.show_all_apps).run_app_menu_popup(selected.get_selection().get_extra_data())
                     else:
                         self.show_all_apps = AppMenuPopup(self.show_all_apps).run_app_menu_popup(None)
+                elif(ControllerInput.START == selected.get_input()):
+                    self.save_app_selection(selected)
+                    return ControllerInput.START
                 elif(Theme.skip_main_menu() and ControllerInput.L1 == selected.get_input()):
                     self.save_app_selection(selected)
                     return ControllerInput.L1
