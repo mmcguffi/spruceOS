@@ -35,6 +35,7 @@ class RomsMenuCommon(ABC):
     _activity_runtime_cache = {}
 
     _game_release_years = {
+        "cavestory": 2004,
         "chronotrigger": 1995,
         "donkeykongcountry": 1994,
         "donkeykongcountry2diddyskongquest": 1995,
@@ -75,9 +76,11 @@ class RomsMenuCommon(ABC):
         "thelegendofzeldaalinktothepast": 1991,
         "vectorman": 1995,
         "vectorman2": 1996,
+        "vvvvvv": 2010,
     }
 
     _game_hltb_times = {
+        "cavestory": "8.4h",
         "chronotrigger": "26.4h",
         "donkeykongcountry": "4.3h",
         "donkeykongcountry2diddyskongquest": "6.5h",
@@ -118,6 +121,7 @@ class RomsMenuCommon(ABC):
         "thelegendofzeldaoracleofseasons": "17.4h",
         "vectorman": "2.5h",
         "vectorman2": "2.5h",
+        "vvvvvv": "2.9h",
     }
 
     def __init__(self, ):
