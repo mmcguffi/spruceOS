@@ -134,6 +134,8 @@ class AppMenu:
                     selected.get_selection().get_value()()
                 elif(ControllerInput.B == selected.get_input()):
                     self.save_app_selection(selected)
+                    if(Theme.skip_main_menu() or Theme.merge_main_menu_and_game_menu()):
+                        return ControllerInput.B
                     running = False
                 elif(ControllerInput.MENU == selected.get_input()):
                     self.save_app_selection(selected)
