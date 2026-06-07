@@ -1,5 +1,6 @@
 
 from pathlib import Path
+import time
 from controller.controller_inputs import ControllerInput
 from devices.device import Device
 from display.display import Display
@@ -134,7 +135,7 @@ class MainMenu:
         if("Game" == selection):
             PyUiLogger.get_logger().info(f"Launching Game Menu")
             PyUiState.set_last_main_menu_selection("Game")
-            self.system_select_menu.run_system_selection()
+            JustGamesMenu().run_rom_selection()
             PyUiState.set_last_main_menu_selection(None)
         elif("App" == selection):
             PyUiLogger.get_logger().info(f"Launching App Menu")
@@ -163,7 +164,16 @@ class MainMenu:
 
     def check_for_gameswitcher(self):
         py_ui_dir = Path(__file__).resolve().parent.parent.parent
+        boot_gs_trigger_file = py_ui_dir / "pyui_boot_gs_trigger"
         gs_trigger_file = py_ui_dir / "pyui_gs_trigger"
+
+        if (boot_gs_trigger_file).exists():
+            boot_gs_trigger_file.unlink()
+            if (gs_trigger_file).exists():
+                gs_trigger_file.unlink()
+            JustGamesMenu().run_rom_selection()
+            return
+
         if (gs_trigger_file).exists():
             gs_trigger_file.unlink()
             from controller.controller import Controller
@@ -193,7 +203,29 @@ class MainMenu:
         if(Theme.skip_main_menu() or Theme.merge_main_menu_and_game_menu()):
 
             selection = PyUiState.get_last_main_menu_selection()
-            if(selection not in ["Game","App","Setting"]):
+            available_tabs = ["Game", "App", "Setting"]
+
+            def select_menu_tab(current_selection):
+                if(current_selection == "Game" and "Setting" in available_tabs):
+                    return "Setting"
+                return "Game"
+
+            def select_start_tab(current_selection):
+                if(current_selection == "App"):
+                    return "Game"
+                return "App"
+
+            def switch_on_start(current_selection):
+                from controller.controller import Controller
+                new_selection = select_start_tab(current_selection)
+                start_time = time.time()
+                while(Controller.is_held_down(ControllerInput.START) and time.time() - start_time < 0.7):
+                    time.sleep(0.01)
+                Controller.clear_input_queue()
+                Controller.clear_last_input()
+                return new_selection
+
+            if(selection not in available_tabs):
                 PyUiLogger.get_logger().info(f"Defaulting to Games tab on main menu due to invalid selection of {selection}")
                 selection = "Game"
 
@@ -201,27 +233,31 @@ class MainMenu:
                 Display.set_selected_tab(selection)
                 if("Game" == selection):
                     PyUiState.set_last_main_menu_selection("Game")
-                    controller_input = self.system_select_menu.run_system_selection()
-                    if(ControllerInput.L1 == controller_input):
-                        selection = "Setting"
-                    elif(ControllerInput.R1 == controller_input):
-                        selection = "App"
+                    controller_input = JustGamesMenu().run_rom_selection()
+                    if(ControllerInput.SELECT == controller_input):
+                        selection = select_menu_tab(selection)
+                    elif(ControllerInput.START == controller_input):
+                        PyUiLogger.get_logger().info("START received from Game menu; switching to App menu")
+                        selection = switch_on_start(selection)
                     PyUiState.set_last_main_menu_selection(None)
                 elif("App" == selection):
                     PyUiState.set_last_main_menu_selection("App")
                     controller_input = self.app_menu.run_app_selection()
                     PyUiLogger.get_logger().info(f"App Menu returned input: {controller_input}")
-                    if(ControllerInput.L1 == controller_input):
-                        selection = "Game"
-                    elif(ControllerInput.R1 == controller_input):
-                        selection = "Setting"
+                    if(ControllerInput.SELECT == controller_input):
+                        selection = select_menu_tab(selection)
+                    elif(ControllerInput.START == controller_input):
+                        PyUiLogger.get_logger().info("START received from App menu; switching to Game menu")
+                        selection = switch_on_start(selection)
+                    elif(ControllerInput.B == controller_input):
+                        PyUiLogger.get_logger().info("B received from App menu; switching to Game menu")
+                        selection = select_start_tab(selection)
                     PyUiState.set_last_main_menu_selection(None)
                 elif("Setting" == selection):
+                    PyUiState.set_last_main_menu_selection("Setting")
                     controller_input = self.settings_menu.show_menu()
-                    if(ControllerInput.L1 == controller_input):
-                        selection = "App"
-                    elif(ControllerInput.R1 == controller_input):
-                        selection = "Game"
+                    if(ControllerInput.SELECT == controller_input or ControllerInput.B == controller_input):
+                        selection = select_menu_tab(selection)
                     PyUiState.set_last_main_menu_selection(None)
 
         else:

@@ -165,6 +165,12 @@ def stop_pyui():
 
 def read_only_check():
     log.info("Performing read-only check")
+    for line in run(["mount"]).stdout.splitlines():
+        if SD_DEV in line and "(ro" in line:
+            log.warning("SD card mounted RO, attempting remount before write test")
+            run(["mount", "-o", "remount,rw", SD_DEV, SD_MOUNTPOINT])
+            break
+
     os.makedirs(FLAGS_DIR, exist_ok=True)
     test_file = f"{FLAGS_DIR}/test-{int(time.time())}"
     try:

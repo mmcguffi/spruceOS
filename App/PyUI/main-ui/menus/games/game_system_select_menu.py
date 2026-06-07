@@ -335,7 +335,7 @@ class GameSystemSelectMenu:
                 if(return_value is not None):
                     if(ControllerInput.B == return_value):
                         PyUiState.set_in_game_selection_screen(None)
-                    elif(Theme.skip_main_menu() and (ControllerInput.L1 == return_value or ControllerInput.R1 == return_value)):
+                    elif(Theme.skip_main_menu() and return_value in [ControllerInput.L1, ControllerInput.R1]):
                         return return_value
 
         else:
@@ -384,7 +384,7 @@ class GameSystemSelectMenu:
             view.set_options(self.systems_list)
 
         exit = False
-        accepted_inputs = [ControllerInput.A, ControllerInput.MENU]
+        accepted_inputs = [ControllerInput.A, ControllerInput.MENU, ControllerInput.START]
         if(Theme.skip_main_menu()):
             accepted_inputs += [ControllerInput.L1, ControllerInput.R1]
 
@@ -394,6 +394,8 @@ class GameSystemSelectMenu:
                 return_value = self.selected.get_selection().get_value()(self.selected.get_input())
                 if(return_value is not None):
                     return return_value
+            elif(ControllerInput.START == self.selected.get_input() and (Theme.skip_main_menu() or Theme.merge_main_menu_and_game_menu())):
+                return ControllerInput.START
             elif(ControllerInput.B == self.selected.get_input() and not Theme.skip_main_menu()):
                 PyUiState.set_in_game_selection_screen(None)
                 exit = True
@@ -401,5 +403,3 @@ class GameSystemSelectMenu:
                 return ControllerInput.L1
             elif(Theme.skip_main_menu() and ControllerInput.R1 == self.selected.get_input()):
                 return ControllerInput.R1
-                    
-        

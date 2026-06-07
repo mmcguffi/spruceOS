@@ -84,6 +84,35 @@ class Controller:
         return Controller.controller_interface.still_held_down()
 
     @staticmethod
+    def is_held_down(controller_input):
+        if hasattr(Controller.controller_interface, "held_controller_inputs"):
+            with Controller.controller_interface.lock:
+                return controller_input in Controller.controller_interface.held_controller_inputs
+        return Controller.still_held_down() and Controller.last_input() == controller_input
+
+    @staticmethod
+    def get_queued_input(timeout=0):
+        deadline = time.time() + timeout
+        while True:
+            queued_input = None
+            if hasattr(Controller.controller_interface, "input_queue"):
+                with Controller.controller_interface.lock:
+                    if Controller.controller_interface.input_queue:
+                        queued_input = Controller.controller_interface.input_queue.popleft()
+            else:
+                queued_input = Controller.controller_interface.get_input(int(timeout * 1000))
+
+            queued_input = Device.get_device().check_for_button_remap(queued_input)
+            Controller.set_last_input(queued_input)
+            if Controller.last_controller_input is not None:
+                Theme.controller_button_pressed(Controller.last_controller_input)
+                return Controller.last_controller_input
+
+            if time.time() >= deadline:
+                return None
+            time.sleep(0.005)
+
+    @staticmethod
     def clear_last_input():
         #if(Controller.last_controller_input is not None):
         #    PyUiLogger.get_logger().info(f"Clearing last input")
@@ -142,7 +171,7 @@ class Controller:
 
 
     @staticmethod
-    def get_input(timeout=-2, called_from_check_for_hotkey=False):
+    def get_input(timeout=-2, called_from_check_for_hotkey=False, suppress_game_switcher=False):
         if(Controller.first_check_after_gs_triggered):
             #Let user stop holding menu
             Controller.first_check_after_gs_triggered = False
@@ -225,7 +254,12 @@ class Controller:
         if Controller.still_held_down():
             if(ControllerInput.MENU == Controller.last_input()):
                 was_hotkey = called_from_check_for_hotkey or Controller.check_for_hotkey()
-                if(not was_hotkey and not Controller.gs_triggered and Controller.allow_pyui_game_switcher()):
+                if(
+                    not suppress_game_switcher
+                    and not was_hotkey
+                    and not Controller.gs_triggered
+                    and Controller.allow_pyui_game_switcher()
+                ):
                     Controller.gs_triggered = True
                     Controller.first_check_after_gs_triggered = True
                     from menus.games.recents_menu_gs import RecentsMenuGS

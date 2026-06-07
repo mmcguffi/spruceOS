@@ -554,6 +554,16 @@ read_only_check() {
     MNT_LINE=$(mount | grep -m1 $SD_DEV)
     log_message "mount line for SD card: $MNT_LINE"
 
+    if [ -n "$MNT_LINE" ]; then
+        MNT_STATUS=$(echo "$MNT_LINE" | cut -d'(' -f2 | cut -d',' -f1)
+        if [ "$MNT_STATUS" = "ro" ]; then
+            log_message "SD card is mounted as RO. Attempting to remount before write test."
+            mount -o remount,rw "$SD_DEV" "$SD_MOUNTPOINT"
+            MNT_LINE=$(mount | grep -m1 $SD_DEV)
+            log_message "mount line after remount attempt: $MNT_LINE"
+        fi
+    fi
+
     mkdir -p /mnt/SDCARD/spruce/flags 2>/dev/null
     TEST_FILE="/mnt/SDCARD/spruce/flags/test-$(date +%s)"
     touch "$TEST_FILE"
@@ -573,11 +583,7 @@ read_only_check() {
 
     if [ -n "$MNT_LINE" ]; then
         MNT_STATUS=$(echo "$MNT_LINE" | cut -d'(' -f2 | cut -d',' -f1)
-        if [ "$MNT_STATUS" = "ro" ]; then
-            log_message "SD card is mounted as RO. Attempting to remount."
-            mount -o remount,rw "$SD_DEV" "$SD_MOUNTPOINT"
-            return 0
-        else
+        if [ "$MNT_STATUS" != "ro" ]; then
             log_message "SD card is not read-only."
             return 1
         fi

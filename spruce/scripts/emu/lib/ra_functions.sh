@@ -183,7 +183,21 @@ run_retroarch() {
 
 	# Sync IGM flag file with config setting
 	IGM_FLAG="/mnt/SDCARD/RetroArch/IGM.txt"
-	if [ "$use_igm" = "True" ] && [ "$CORE" != "dosbox_pure" ]; then
+	if [ "$PLATFORM" = "Flip" ]; then
+		rm -f "$IGM_FLAG"
+		update_ra_config_file_with_new_setting "$PLATFORM_CFG" \
+			"input_menu_toggle = \"nul\"" \
+			"input_menu_toggle_axis = \"nul\"" \
+			"input_menu_toggle_btn = \"nul\"" \
+			"input_menu_toggle_gamepad_combo = \"0\"" \
+			"input_menu_toggle_mbtn = \"nul\""
+		update_ra_config_file_with_new_setting "$RA_DIR/.config/retroarch/retroarch.cfg" \
+			"input_menu_toggle = \"nul\"" \
+			"input_menu_toggle_axis = \"nul\"" \
+			"input_menu_toggle_btn = \"nul\"" \
+			"input_menu_toggle_gamepad_combo = \"0\"" \
+			"input_menu_toggle_mbtn = \"nul\""
+	elif [ "$use_igm" = "True" ] && [ "$CORE" != "dosbox_pure" ]; then
 		touch "$IGM_FLAG"
 	else
 		rm -f "$IGM_FLAG"
